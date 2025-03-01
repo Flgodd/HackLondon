@@ -17,9 +17,9 @@
 
 	let authenticated = $state(false);
 	let hasMetamask = $state(false);
-	let web3 = undefined;
-	let contractAddress: string | undefined = undefined;
-	let userAddress: string | undefined = undefined;
+	let web3: Web3 | undefined = $state(undefined);
+	let contractAddress: string | undefined = $state(undefined);
+	let userAddress: string | undefined = $state(undefined);
 	let contract: Contract<AbiItem[]> | undefined = undefined;
 	let token = $state('');
 	let metadata: metadataType | undefined = $state(undefined);
@@ -31,7 +31,6 @@
 	let loadingMint = $state(false);
 	let loadingTransfer = $state(false);
 
-
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
 	function sleep(ms: number): Promise<void> {
@@ -39,11 +38,14 @@
 	}
 
 	$effect(() => {
+		console.log("buildContract: ", buildContract, authenticated, web3, contractAddress)
 		if(buildContract) {
+			console.log("building contract")
 			contract = new Contract<AbiItem[]>(
 				abi,
 				contractAddress!
 			);
+			contract.setProvider(web3?.currentProvider);
 		}
 	})
 
@@ -70,9 +72,14 @@
 		}
 
 		if (data.userAddress) {
+			console.log("Exsiting address found")
 			userAddress = data.userAddress;
 			authenticated = true;
+			//@ts-ignore
+			web3 = new Web3(window.ethereum);
+
 			contractAddress = await fetchContract();
+			console.log("contractAddress: ", contractAddress)
 		}
 	});
 
@@ -82,8 +89,8 @@
 
 		// @ts-ignore
 		await window.ethereum.request({ method: 'eth_requestAccounts' })
-
-		const accounts = await web3.eth.getAccounts();
+		
+		const accounts = await web3.eth.getAccounts()
 		userAddress = accounts[0];
 		
 		console.log("Users address: ", userAddress);
@@ -113,8 +120,8 @@
 			method: 'GET',
 		});
 		const json = await response.json();
-
-		return json.contractAddress;
+		console.log("fetchContract json: ", json)
+		return json.address;
 	}
 
 	const go = async () => {
@@ -150,16 +157,18 @@
 
 	const mintProduct = async () => {
 		if(contract) {
+			console.log("minting ", web3?.currentProvider)
 			loadingMint = true;
 
-			const sendObj = contract.methods.publicMint(0).send({from: userAddress});
+			const sendObj = contract.methods.publicMint('0').send({from: userAddress});
+			console.log("poo", contract)
 			sendObj.on('transactionHash', function(hash){
 				transactionHash = hash;
 			});
 
 			//@ts-ignore
-			sendObj.on('ProductMinted', function (tokenId, owner, expiryTimestamp) {
-				console.log("ProductMinted with token id, ", tokenId);
+			sendObj.on('ProductMinted', function (token, owner, expiryTimestamp) {
+				console.log("ProductMinted with token id, ", token);
 				loadingMint = false;
 				successfulMint = true;
 
@@ -168,7 +177,7 @@
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({ userAddress, tokenId, productName })
+					body: JSON.stringify({ userAddress, token, productName })
 				});
 			});
 		}
