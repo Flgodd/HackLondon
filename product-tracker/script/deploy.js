@@ -11,6 +11,7 @@ async function main() {
   
   const address = await productTracker.getAddress();
   console.log("ProductTracker deployed to:", address);
+  console.log("Owner address:", deployer.address);
 }
 
 main()
