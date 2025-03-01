@@ -13,7 +13,7 @@ export async function generateTokenMetadataURI(tokenId: string): Promise<string>
     const metadata = JSON.stringify({ name: tokenId });
     await uploadString(metadataRef, metadata, "raw");
   
-    return `gs://ChainTrack.appspot.com/${metadataRef.fullPath}`;
+    return `gs://wrangler-5a833.appspot.com/${metadataRef.fullPath}`;
   } catch (error) {
     console.error("Error generating metadata URI:", error);
     throw error;
