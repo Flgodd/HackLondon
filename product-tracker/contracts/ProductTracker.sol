@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts ^5.0.0
 pragma solidity ^0.8.22;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -12,17 +11,22 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
     // Mapping to store product metadata off-chain (IPFS URI)
     mapping(uint256 => string) private _productMetadata;
 
+    // Mapping to store token expiry timestamps (0 means no expiry)
+    mapping(uint256 => uint256) private _expiryTimestamps;
+
     // Event logs for tracking activity
-    event ProductMinted(uint256 tokenId, address owner, string metadataURI);
+    event ProductMinted(uint256 tokenId, address owner, string metadataURI, uint256 expiry);
     event OwnershipTransferred(uint256 tokenId, address from, address to);
+    event TokenBurned(uint256 tokenId);
+    event ExpiryExtended(uint256 tokenId, uint256 newExpiry);
 
     constructor(address initialOwner)
         ERC721("ProductToken", "PTK")
         Ownable(initialOwner)
     {}
 
-    // Function to mint an NFT representing a product
-    function safeMint(address to, string memory uri) 
+    // Function to mint an NFT representing a product (expiryDuration = 0 means no expiry)
+    function safeMint(address to, string memory uri, uint256 expiryDuration) 
         public 
         onlyOwner 
         returns (uint256) 
@@ -31,22 +35,76 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         _safeMint(to, tokenId); // Mint NFT to recipient
         _setTokenURI(tokenId, uri); // Store metadata URI
         _productMetadata[tokenId] = uri; // Store in mapping
+        
+        // Set expiry timestamp (0 means no expiry)
+        if (expiryDuration > 0) {
+            _expiryTimestamps[tokenId] = block.timestamp + expiryDuration;
+        } else {
+            _expiryTimestamps[tokenId] = 0; // No expiry
+        }
 
-        emit ProductMinted(tokenId, to, uri); // Emit event for transparency
+        emit ProductMinted(tokenId, to, uri, _expiryTimestamps[tokenId]); // Emit event
         return tokenId;
     }
 
-    // Function to transfer ownership of the product
+    // Function to check if an NFT is expired (returns false if expiry is 0)
+    function isExpired(uint256 tokenId) public view returns (bool) {
+        return _expiryTimestamps[tokenId] > 0 && block.timestamp >= _expiryTimestamps[tokenId];
+    }
+
+    // Function to transfer ownership of the product (only if not expired)
     function transferProduct(address to, uint256 tokenId) public {
         require(ownerOf(tokenId) == msg.sender, "You are not the owner");
-        _transfer(msg.sender, to, tokenId);
+        require(!isExpired(tokenId), "Token has expired and cannot be transferred");
         
-        emit OwnershipTransferred(tokenId, msg.sender, to); // Emit event
+        _transfer(msg.sender, to, tokenId);
+        emit OwnershipTransferred(tokenId, msg.sender, to);
     }
 
     // Retrieve the metadata URI for a product (from IPFS)
     function getProductMetadata(uint256 tokenId) public view returns (string memory) {
         return _productMetadata[tokenId];
+    }
+
+    // Retrieve the expiry timestamp for a product (0 means no expiry)
+    function getExpiryTimestamp(uint256 tokenId) public view returns (uint256) {
+        return _expiryTimestamps[tokenId];
+    }
+
+    function burnExpired(uint256 tokenId) public {
+        require(isExpired(tokenId), "Token is not expired");
+        require(ownerOf(tokenId) == msg.sender || msg.sender == owner(), "Only token owner or contract owner can burn");
+
+        _burn(tokenId);
+        delete _productMetadata[tokenId]; // Remove metadata
+        delete _expiryTimestamps[tokenId]; // Remove expiry data
+
+        emit TokenBurned(tokenId);
+    }
+
+    function extendExpiry(uint256 tokenId, uint256 renewalPeriod) public {
+        require(ownerOf(tokenId) == msg.sender, "Only token owner can extend expiry");
+        require(!isExpired(tokenId), "Cannot extend an expired token");
+        require(_expiryTimestamps[tokenId] > 0, "Token has no expiry");
+
+        _expiryTimestamps[tokenId] += renewalPeriod;
+        emit ExpiryExtended(tokenId, _expiryTimestamps[tokenId]);
+    }
+
+    function burnAllExpired() public onlyOwner {
+        for (uint256 tokenId = 0; tokenId < _nextTokenId; tokenId++) {
+            try this.ownerOf(tokenId) returns (address) {
+                if (isExpired(tokenId)) {
+                    _burn(tokenId);
+                    delete _productMetadata[tokenId];
+                    delete _expiryTimestamps[tokenId];
+
+                    emit TokenBurned(tokenId);
+                }
+            } catch {
+                continue;
+            }
+        }
     }
 
     // Overrides required by Solidity for ERC721URIStorage
@@ -68,3 +126,4 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         return super.supportsInterface(interfaceId);
     }
 }
+
