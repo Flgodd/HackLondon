@@ -1,31 +1,62 @@
-<script>
+<script lang="ts">
     import { onMount } from "svelte";
     import { page } from "$app/stores";
 
-    let tokenId;
-    let metadata;
-    let loading = true;
+    // Define types for metadata
+    interface ProductMetadata {
+        productName: string;
+        owner: string;
+        timestamp: number;
+    }
 
-    // Get tokenId from the URL
-    $: tokenId = $page.params.tokenId;
+    let tokenId = $state<string | undefined>(undefined);
+    let metadata = $state<ProductMetadata | null>(null);
+    let loading = $state(true);
+
+    const derived = {
+        tokenId: () => $page.params.tokenId
+    };
+
+
+    $effect(() => {
+        tokenId = derived.tokenId();
+    });
+
+    $effect(() => {
+        if (tokenId) {
+            fetchMetadata();
+        }
+    });
 
     async function fetchMetadata() {
         if (!tokenId) return;
 
+        loading = true;
+        
         try {
             const response = await fetch(`https://localhost/products/${tokenId}`);
-            metadata = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            metadata = await response.json() as ProductMetadata;
         } catch (error) {
             console.error("Failed to fetch metadata:", error);
+            metadata = null;
         } finally {
             loading = false;
         }
     }
 
-    onMount(fetchMetadata);
+    onMount(() => {
+        if (tokenId) {
+            fetchMetadata();
+        }
+    });
 </script>
 
-<h1>Product Details for Token: {tokenId}</h1>
+<h1>Product Details for Token: {tokenId || 'Unknown'}</h1>
 
 {#if loading}
     <p>Loading product details...</p>

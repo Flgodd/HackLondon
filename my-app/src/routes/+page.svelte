@@ -6,6 +6,7 @@
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
+	import QRCode from "qrcode-generator";
 
 	let { data }: PageProps = $props();
 
@@ -186,10 +187,13 @@
 		}
 	}
 
-	async function generateQRCode(token: string) {
-        const url = `https://localhost/product/${token}`;
-        qrCodeSrc = await QRCode.toDataURL(url);
+	function generateQRCode(tokenId: string) {
+        const qr = QRCode(0, "L");
+        qr.addData(`https://localhost/product/${tokenId}`);
+        qr.make();
+        qrCodeSrc = qr.createDataURL(6, 6);
     }
+
 </script>
 
 <div class='flex flex-col gap-15 items-center justify-center w-full bg-indigo-900 p-20'>
