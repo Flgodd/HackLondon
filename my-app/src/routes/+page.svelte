@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import Button from "../lib/components/Button.svelte";
 	import Textfield from "../lib/components/Textfield.svelte";
-	import { faUser } from "@fortawesome/free-solid-svg-icons";
+	import { faUser,faArrowUp, faLink } from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
@@ -12,6 +12,7 @@
 	type metadataType = {
 		history: [{[key: string]: string}]
 		productName: string
+		token: string
 	}
 
 	let authenticated = $state(false);
@@ -22,8 +23,20 @@
 	let contract: Contract<AbiItem[]> | undefined = undefined;
 	let token = $state('');
 	let metadata: metadataType | undefined = $state(undefined);
+	let toAddress = $state('');
+	let transactionHash = $state('');
+	let productName = $state('');
+	let successfulTransfer = $state(false);
+	let successfulMint = $state(false);
+	let loadingMint = $state(false);
+	let loadingTransfer = $state(false);
+
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
+
+	function sleep(ms: number): Promise<void> {
+    	return new Promise(resolve => setTimeout(resolve, ms));
+	}
 
 	$effect(() => {
 		if(buildContract) {
@@ -34,7 +47,21 @@
 		}
 	})
 
-	$effect(() => console.log("token: ", token));
+	$effect(() => {
+		if(successfulMint) {
+			sleep(5000).then(() => {
+				successfulMint = false;
+			})
+		}
+	});
+
+	$effect(() => {
+		if(successfulTransfer) {
+			sleep(5000).then(() => {
+				successfulMint = false;
+			})
+		}
+	});
 
 	onMount(async () => {
 		// @ts-ignore
@@ -92,6 +119,9 @@
 
 	const go = async () => {
 		if(contract) {
+			successfulTransfer = false;
+			loadingTransfer = false;
+
 			const uri: string = await contract.methods.getProductMetadata(token).call({from: userAddress})
 			const resp = await fetch(uri, {
 				method: 'GET',
@@ -99,7 +129,49 @@
 
 			metadata = await resp.json();
 		}
+	}
 
+	const transferOwnership = async () => {
+		if(contract) {
+			loadingTransfer = true;
+
+			const sendObj = contract.methods.transferProduct(toAddress, token).send({from: userAddress});
+			sendObj.on('transactionHash', function(hash){
+				transactionHash = hash;
+			});
+
+			sendObj.on('receipt', function (receipt) {
+				console.log("Transaction confirmed in a block:", receipt);
+				loadingTransfer = false;
+				successfulTransfer = true;
+			});
+		}
+	}
+
+	const mintProduct = async () => {
+		if(contract) {
+			loadingMint = true;
+
+			const sendObj = contract.methods.publicMint(0).send({from: userAddress});
+			sendObj.on('transactionHash', function(hash){
+				transactionHash = hash;
+			});
+
+			//@ts-ignore
+			sendObj.on('ProductMinted', function (tokenId, owner, expiryTimestamp) {
+				console.log("ProductMinted with token id, ", tokenId);
+				loadingMint = false;
+				successfulMint = true;
+
+				fetch('../api/metadataService', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ userAddress, tokenId, productName })
+				});
+			});
+		}
 	}
 </script>
 
@@ -117,14 +189,36 @@
 	{:else}
 		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please start by <a href='https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en&pli=1' >installing the MetaMask chrome extension</a> to link your wallet.</p>
 	{/if}
+</div>
 
+<div class='w-full h-96 bg-indigo-500'>
 	{#if metadata}
 		{#each metadata.history as h}
 			<p>{h}</p>
 		{/each}
-	{/if}
 
+		{#if metadata.history.length > 0 && metadata.history.at(-1)!.ownerAddress === userAddress && !successfulTransfer}
+			<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
+			<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
+				{loadingTransfer ? "Loading..." : "Transfer Ownership"}
+			</Button>
+		{/if}
+
+		{#if successfulTransfer}
+			<p>Transfer successful! Transaction hash: {transactionHash}</p>
+		{/if}
+	{/if}
 </div>
-<div class='w-full h-96 bg-indigo-500'>
-	
+
+<div class='w-full h-96 bg-indigo-700 flex flex-col gap-15 items-center justify-center'>
+	{#if authenticated}
+		<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Link a Product!</h1>
+		<div class='flex flex-col gap-2 items-center w-full'>
+			<Textfield name="productName" placeholder="Product Name" size="lg" bind:value={productName}/>
+			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
+		</div>
+		{#if successfulMint}
+			<p>Link successful! Transaction hash: {transactionHash}</p>
+		{/if}
+	{/if}
 </div>

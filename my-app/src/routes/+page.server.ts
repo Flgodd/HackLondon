@@ -1,20 +1,12 @@
 import type { Actions, PageServerLoad } from './$types';
 
 export const actions = {
-		go: async ({ cookies, request }) => {
+		transferOwnership: async ({ cookies, request }) => {
 			const data = await request.formData();
-			const token = data.get("tokenId");
+			const token = data.get("token");
+			const toAddress = data.get("toAddress");
 
-			//get current token mapping to uri
-	
 			return { go: true };
-		},
-		auth: async ({ cookies, request }) => {
-			const data = await request.formData();
-
-			//get current token mapping to uri
-			
-			return { auth: true };
 		}
 	
 } satisfies Actions;
