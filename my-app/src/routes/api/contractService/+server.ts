@@ -1,11 +1,8 @@
 import { json } from '@sveltejs/kit';
-import fs from 'fs';
-import { CONTRACT_ADDRESS } from '$env/static/private';
-import Web3 from 'web3';
 
 export const GET = async () => {
     const contract = {
-        address: CONTRACT_ADDRESS,
+        address: '0x20948b8138073FE1e86E6432cD69Fe77B5cD8B9D',
     }
 
     return json(contract);

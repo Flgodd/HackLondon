@@ -18,9 +18,9 @@
 
 	let authenticated = $state(false);
 	let hasMetamask = $state(false);
-	let web3 = undefined;
-	let contractAddress: string | undefined = undefined;
-	let userAddress: string | undefined = undefined;
+	let web3: Web3 | undefined = $state(undefined);
+	let contractAddress: string | undefined = $state(undefined);
+	let userAddress: string | undefined = $state(undefined);
 	let contract: Contract<AbiItem[]> | undefined = undefined;
 	let token = $state('');
 	let metadata: metadataType | undefined = $state(undefined);
@@ -31,7 +31,7 @@
 	let successfulMint = $state(false);
 	let loadingMint = $state(false);
 	let loadingTransfer = $state(false);
-	let qrCodeSrc = "";
+	let qrCodeSrc = $state("");
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
@@ -40,11 +40,14 @@
 	}
 
 	$effect(() => {
+		console.log("buildContract: ", buildContract, authenticated, web3, contractAddress)
 		if(buildContract) {
+			console.log("building contract")
 			contract = new Contract<AbiItem[]>(
 				abi,
 				contractAddress!
 			);
+			contract.setProvider(web3?.currentProvider);
 		}
 	})
 
@@ -71,9 +74,14 @@
 		}
 
 		if (data.userAddress) {
+			console.log("Exsiting address found")
 			userAddress = data.userAddress;
 			authenticated = true;
+			//@ts-ignore
+			web3 = new Web3(window.ethereum);
+
 			contractAddress = await fetchContract();
+			console.log("contractAddress: ", contractAddress)
 		}
 	});
 
@@ -83,8 +91,8 @@
 
 		// @ts-ignore
 		await window.ethereum.request({ method: 'eth_requestAccounts' })
-
-		const accounts = await web3.eth.getAccounts();
+		
+		const accounts = await web3.eth.getAccounts()
 		userAddress = accounts[0];
 		
 		console.log("Users address: ", userAddress);
@@ -114,8 +122,8 @@
 			method: 'GET',
 		});
 		const json = await response.json();
-
-		return json.contractAddress;
+		console.log("fetchContract json: ", json)
+		return json.address;
 	}
 
 	const go = async () => {
@@ -151,28 +159,30 @@
 
 	const mintProduct = async () => {
 		if(contract) {
+			console.log("minting ", web3?.currentProvider)
 			loadingMint = true;
 
-			const sendObj = contract.methods.publicMint(0).send({from: userAddress});
-			sendObj.on('transactionHash', function(hash){
-				transactionHash = hash;
-			});
+		contract.methods.publicMint('0').send({from: userAddress})
+			.then(receipt => {
+				console.log("Transaction Successful:", receipt);
+				const token: any = receipt.events?.ProductMinted.returnValues['0']
 
-			//@ts-ignore
-			sendObj.on('ProductMinted', function (tokenId, owner, expiryTimestamp) {
-				console.log("ProductMinted with token id, ", tokenId);
+				console.log("ProductMinted with token id, ", token);
 				loadingMint = false;
 				successfulMint = true;
 
-				generateQRCode(tokenId);
+				//generateQRCode(token);
 
 				fetch('../api/metadataService', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({ userAddress, tokenId, productName })
+					body: JSON.stringify({ userAddress, token: token.toString(), productName })
 				});
+			})
+			.catch(error => {
+				console.error("Transaction Failed:", error);
 			});
 		}
 	}
