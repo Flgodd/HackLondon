@@ -25,7 +25,7 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         Ownable(initialOwner)
     {}
 
-    // Function to mint an NFT representing a product (expiryDuration = 0 means no expiry)
+    // Original mint function - only owner can call (useful for admin operations)
     function safeMint(address to, string memory uri, uint256 expiryDuration) 
         public 
         onlyOwner 
@@ -44,6 +44,28 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         }
 
         emit ProductMinted(tokenId, to, uri, _expiryTimestamps[tokenId]); // Emit event
+        return tokenId;
+    }
+
+    // New public mint function - anyone can call this
+    function publicMint(string memory uri, uint256 expiryDuration) 
+        public 
+        returns (uint256) 
+    {
+        // Mint to the sender's address
+        uint256 tokenId = _nextTokenId++; // Increment token ID
+        _safeMint(msg.sender, tokenId); // Mint NFT to the caller
+        _setTokenURI(tokenId, uri); // Store metadata URI
+        _productMetadata[tokenId] = uri; // Store in mapping
+        
+        // Set expiry timestamp (0 means no expiry)
+        if (expiryDuration > 0) {
+            _expiryTimestamps[tokenId] = block.timestamp + expiryDuration;
+        } else {
+            _expiryTimestamps[tokenId] = 0; // No expiry
+        }
+
+        emit ProductMinted(tokenId, msg.sender, uri, _expiryTimestamps[tokenId]); // Emit event
         return tokenId;
     }
 
@@ -71,6 +93,16 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         return _expiryTimestamps[tokenId];
     }
 
+    // Helper function to check if a token exists (replacement for _exists)
+    function _tokenExists(uint256 tokenId) internal view returns (bool) {
+        try this.ownerOf(tokenId) returns (address) {
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    // 🔥 Burn function: allows only owner or contract owner to burn expired NFTs
     function burnExpired(uint256 tokenId) public {
         require(isExpired(tokenId), "Token is not expired");
         require(ownerOf(tokenId) == msg.sender || msg.sender == owner(), "Only token owner or contract owner can burn");
@@ -82,6 +114,7 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         emit TokenBurned(tokenId);
     }
 
+    // 🔄 Extend expiry: allows current owner to renew NFT before it expires
     function extendExpiry(uint256 tokenId, uint256 renewalPeriod) public {
         require(ownerOf(tokenId) == msg.sender, "Only token owner can extend expiry");
         require(!isExpired(tokenId), "Cannot extend an expired token");
@@ -102,6 +135,7 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
                     emit TokenBurned(tokenId);
                 }
             } catch {
+                // Skip tokens that don't exist
                 continue;
             }
         }
