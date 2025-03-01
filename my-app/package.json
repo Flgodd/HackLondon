@@ -33,7 +33,9 @@
 		"@tailwindcss/cli": "^4.0.9",
 		"@tailwindcss/postcss": "^4.0.9",
 		"@tailwindcss/vite": "^4.0.9",
+		"dotenv": "^16.4.7",
 		"firebase": "^11.4.0",
+		"firebase-admin": "^13.1.0",
 		"qrcode": "^1.5.4",
 		"web3": "^4.16.0"
 	}

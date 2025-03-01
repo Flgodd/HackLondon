@@ -297,12 +297,6 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "metadataURI",
-        "type": "string"
-      },
-      {
-        "indexed": false,
         "internalType": "uint256",
         "name": "expiry",
         "type": "uint256"
@@ -572,11 +566,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "uri",
-        "type": "string"
-      },
-      {
         "internalType": "uint256",
         "name": "expiryDuration",
         "type": "uint256"
@@ -606,11 +595,6 @@
         "internalType": "address",
         "name": "to",
         "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "uri",
-        "type": "string"
       },
       {
         "internalType": "uint256",

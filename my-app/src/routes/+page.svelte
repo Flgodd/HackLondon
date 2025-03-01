@@ -6,8 +6,6 @@
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
-	//@ts-ignore
-	import { QRCode } from "qrcode";
 
 	let { data }: PageProps = $props();
 
@@ -163,27 +161,27 @@
 			console.log("minting ", web3?.currentProvider)
 			loadingMint = true;
 
-			const sendObj = contract.methods.publicMint('0').send({from: userAddress});
-			console.log("poo", contract)
-			sendObj.on('transactionHash', function(hash){
-				transactionHash = hash;
-			});
+		contract.methods.publicMint('0').send({from: userAddress})
+			.then(receipt => {
+				console.log("Transaction Successful:", receipt);
+				const token: any = receipt.events?.ProductMinted.returnValues['0']
 
-			//@ts-ignore
-			sendObj.on('ProductMinted', function (token, owner, expiryTimestamp) {
 				console.log("ProductMinted with token id, ", token);
 				loadingMint = false;
 				successfulMint = true;
 
-				generateQRCode(token);
+				//generateQRCode(token);
 
 				fetch('../api/metadataService', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({ userAddress, token, productName })
+					body: JSON.stringify({ userAddress, token: token.toString(), productName })
 				});
+			})
+			.catch(error => {
+				console.error("Transaction Failed:", error);
 			});
 		}
 	}
