@@ -5,54 +5,59 @@
 	import { faUser } from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
+	import abi from '$lib/ProductTrackerABI.json';
 
 	let { data }: PageProps = $props();
+
+	type metadataType = {
+		history: [{[key: string]: string}]
+		productName: string
+	}
 
 	let authenticated = $state(false);
 	let hasMetamask = $state(false);
 	let web3 = undefined;
-	let contractAddress = undefined;
+	let contractAddress: string | undefined = undefined;
+	let userAddress: string | undefined = undefined;
 	let contract: Contract<AbiItem[]> | undefined = undefined;
 	let token = $state('');
+	let metadata: metadataType | undefined = $state(undefined);
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
 	$effect(() => {
 		if(buildContract) {
-			const abi = "test abi"
-			const contractAddress = "test address"
-
 			contract = new Contract<AbiItem[]>(
-				JSON.parse(abi),
-				contractAddress
+				abi,
+				contractAddress!
 			);
 		}
 	})
 
 	$effect(() => console.log("token: ", token));
 
-	onMount(() => {
+	onMount(async () => {
 		// @ts-ignore
 		if (window.ethereum) {
 			hasMetamask = true;
 		}
 
 		if (data.userAddress) {
+			userAddress = data.userAddress;
 			authenticated = true;
-
-			contractAddress = fetchContract();
+			contractAddress = await fetchContract();
 		}
 	});
 
 	const authWallet = async () => {
 		//@ts-ignore
-		const web3 = new Web3(window.ethereum);
+		web3 = new Web3(window.ethereum);
 
 		// @ts-ignore
 		await window.ethereum.request({ method: 'eth_requestAccounts' })
 
 		const accounts = await web3.eth.getAccounts();
-		const userAddress = accounts[0];
+		userAddress = accounts[0];
 		
 		console.log("Users address: ", userAddress);
 
@@ -69,8 +74,7 @@
 
 		if(response.ok) {
 			authenticated = true;
-
-			contractAddress = fetchContract();
+			contractAddress = await fetchContract();
 		}
 
 		//maybe swap user to correct network if necessary:
@@ -78,7 +82,6 @@
 	}
 
 	const fetchContract = async () => {
-		//make a post request to the /cookieService api endpoint with fetch
 		const response = await fetch('../api/contractService', {
 			method: 'GET',
 		});
@@ -89,10 +92,12 @@
 
 	const go = async () => {
 		if(contract) {
-			contract.methods.getOwnerOfToken(token).call(
+			const uri: string = await contract.methods.getProductMetadata(token).call({from: userAddress})
+			const resp = await fetch(uri, {
+				method: 'GET',
+			})
 
-			)
-
+			metadata = await resp.json();
 		}
 
 	}
@@ -112,8 +117,12 @@
 	{:else}
 		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please start by <a href='https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en&pli=1' >installing the MetaMask chrome extension</a> to link your wallet.</p>
 	{/if}
-	
 
+	{#if metadata}
+		{#each metadata.history as h}
+			<p>{h}</p>
+		{/each}
+	{/if}
 
 </div>
 <div class='w-full h-96 bg-indigo-500'>
