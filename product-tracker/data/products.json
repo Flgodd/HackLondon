@@ -1,0 +1,30 @@
+[
+    {
+      "product_id": "1",
+      "name": "Organic Coffee",
+      "batch": "Batch #456",
+      "manufactured_date": "2025-02-12",
+      "image": "https://yourapp.com/images/product1.png",
+      "qr_code": "https://yourapp.com/product/1",
+      "expiry": "0"
+    },
+    {
+      "product_id": "2",
+      "name": "Smartwatch X",
+      "batch": "Batch #789",
+      "manufactured_date": "2025-01-20",
+      "image": "https://yourapp.com/images/product2.png",
+      "qr_code": "https://yourapp.com/product/2",
+      "expiry": "0"
+    },
+    {
+        "product_id": "3",
+        "name": "Gym Membership",
+        "batch": "Batch #789",
+        "manufactured_date": "2025-01-20",
+        "image": "https://yourapp.com/images/product2.png",
+        "qr_code": "https://yourapp.com/product/3",
+        "expiry": "30"
+      }
+  ]
+  
