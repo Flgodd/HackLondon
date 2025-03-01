@@ -1,2 +1,0 @@
-# HackLondon
-project for hacklondon
