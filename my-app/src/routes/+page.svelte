@@ -6,7 +6,8 @@
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
-	import QRCode from "qrcode";
+	//@ts-ignore
+	import { QRCode } from "qrcode";
 
 	let { data }: PageProps = $props();
 
@@ -31,7 +32,7 @@
 	let successfulMint = $state(false);
 	let loadingMint = $state(false);
 	let loadingTransfer = $state(false);
-	let qrCodeSrc = "";
+	let qrCodeSrc = $state("");
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
@@ -174,7 +175,7 @@
 				loadingMint = false;
 				successfulMint = true;
 
-				generateQRCode(tokenId);
+				generateQRCode(token);
 
 				fetch('../api/metadataService', {
 					method: 'POST',
@@ -187,8 +188,8 @@
 		}
 	}
 
-	async function generateQRCode(tokenId) {
-        const url = `https://localhost/product/${tokenId}`;
+	async function generateQRCode(token: string) {
+        const url = `https://localhost/product/${token}`;
         qrCodeSrc = await QRCode.toDataURL(url);
     }
 </script>

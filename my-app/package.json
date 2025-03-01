@@ -16,6 +16,7 @@
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tsconfig/svelte": "^5.0.4",
+		"@types/qrcode": "^1.5.5",
 		"@types/web3": "^1.0.20",
 		"autoprefixer": "^10.4.20",
 		"postcss": "^8.5.3",
@@ -33,6 +34,7 @@
 		"@tailwindcss/postcss": "^4.0.9",
 		"@tailwindcss/vite": "^4.0.9",
 		"firebase": "^11.4.0",
+		"qrcode": "^1.5.4",
 		"web3": "^4.16.0"
 	}
 }
