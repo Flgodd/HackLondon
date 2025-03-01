@@ -15,7 +15,7 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
     mapping(uint256 => uint256) private _expiryTimestamps;
 
     // Event logs for tracking activity
-    event ProductMinted(uint256 tokenId, address owner, string metadataURI, uint256 expiry);
+    event ProductMinted(uint256 tokenId, address owner, uint256 expiry);
     event OwnershipTransferred(uint256 tokenId, address from, address to);
     event TokenBurned(uint256 tokenId);
     event ExpiryExtended(uint256 tokenId, uint256 newExpiry);
@@ -26,15 +26,13 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
     {}
 
     // Original mint function - only owner can call (useful for admin operations)
-    function safeMint(address to, string memory uri, uint256 expiryDuration) 
+    function safeMint(address to, uint256 expiryDuration) 
         public 
         onlyOwner 
         returns (uint256) 
     {
         uint256 tokenId = _nextTokenId++; // Increment token ID
         _safeMint(to, tokenId); // Mint NFT to recipient
-        _setTokenURI(tokenId, uri); // Store metadata URI
-        _productMetadata[tokenId] = uri; // Store in mapping
         
         // Set expiry timestamp (0 means no expiry)
         if (expiryDuration > 0) {
@@ -43,20 +41,18 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
             _expiryTimestamps[tokenId] = 0; // No expiry
         }
 
-        emit ProductMinted(tokenId, to, uri, _expiryTimestamps[tokenId]); // Emit event
+        emit ProductMinted(tokenId, to, _expiryTimestamps[tokenId]); // Emit event
         return tokenId;
     }
 
     // New public mint function - anyone can call this
-    function publicMint(string memory uri, uint256 expiryDuration) 
+    function publicMint(uint256 expiryDuration) 
         public 
         returns (uint256) 
     {
         // Mint to the sender's address
         uint256 tokenId = _nextTokenId++; // Increment token ID
         _safeMint(msg.sender, tokenId); // Mint NFT to the caller
-        _setTokenURI(tokenId, uri); // Store metadata URI
-        _productMetadata[tokenId] = uri; // Store in mapping
         
         // Set expiry timestamp (0 means no expiry)
         if (expiryDuration > 0) {
@@ -65,7 +61,7 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
             _expiryTimestamps[tokenId] = 0; // No expiry
         }
 
-        emit ProductMinted(tokenId, msg.sender, uri, _expiryTimestamps[tokenId]); // Emit event
+        emit ProductMinted(tokenId, msg.sender, _expiryTimestamps[tokenId]); // Emit event
         return tokenId;
     }
 
