@@ -9,9 +9,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
-    // Mapping to store product metadata off-chain (IPFS URI)
-    mapping(uint256 => string) private _productMetadata;
-
     // Event logs for tracking activity
     event ProductMinted(uint256 tokenId, address owner, string metadataURI);
     event OwnershipTransferred(uint256 tokenId, address from, address to);
@@ -30,7 +27,6 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         uint256 tokenId = _nextTokenId++; // Increment token ID
         _safeMint(to, tokenId); // Mint NFT to recipient
         _setTokenURI(tokenId, uri); // Store metadata URI
-        _productMetadata[tokenId] = uri; // Store in mapping
 
         emit ProductMinted(tokenId, to, uri); // Emit event for transparency
         return tokenId;
@@ -42,11 +38,6 @@ contract ProductTracker is ERC721, ERC721URIStorage, Ownable {
         _transfer(msg.sender, to, tokenId);
         
         emit OwnershipTransferred(tokenId, msg.sender, to); // Emit event
-    }
-
-    // Retrieve the metadata URI for a product (from IPFS)
-    function getProductMetadata(uint256 tokenId) public view returns (string memory) {
-        return _productMetadata[tokenId];
     }
 
     // Overrides required by Solidity for ERC721URIStorage
