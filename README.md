@@ -28,7 +28,7 @@ This project implements a **blockchain-powered product tracking system** using *
 
 ## 📌 📥 Setup & Installation
 
-### **1️⃣ Clone the Repository**
+### **Clone the Repository**
 ```bash
 git clone https://github.com/Flgodd/HackLondon
 cd my-app
