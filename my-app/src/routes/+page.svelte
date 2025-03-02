@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import Button from "../lib/components/Button.svelte";
 	import Textfield from "../lib/components/Textfield.svelte";
-	import { faUser,faArrowUp, faLink, faArrowRight, faBars, faArrowDown} from "@fortawesome/free-solid-svg-icons";
+	import { faUser,faArrowUp, faLink, faTimeline, faMoneyBillTransfer, faBars, faArrowDown} from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
@@ -37,6 +37,7 @@
 	let isMenuOpen = $state(false);
 	let isNavVisible = $state(false);
 	let invalidTokenError = $state(false);
+	let expiry = $state('');
 
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
@@ -49,11 +50,6 @@
 		console.log("buildContract: ", buildContract, authenticated, web3, contractAddress)
 		if(buildContract) {
 			buildContractFn();
-
-			if (data.token){
-				token = data.token;
-				go();
-			}
 		}
 	})
 
@@ -89,6 +85,11 @@
 			contractAddress = await fetchContract();
 			console.log("contractAddress: ", contractAddress)
 		}
+
+		if (data.token){
+				token = data.token;
+				navigateTo('history')
+			}
 	});
 
 	const buildContractFn = () => {
@@ -98,6 +99,7 @@
 				contractAddress!
 			);
 			contract.setProvider(web3?.currentProvider);
+			
 	}
 
 	const toggleMenu = () => {
@@ -193,6 +195,7 @@
 			contract.methods.transferProduct(toAddress, token).send({from: userAddress})
 			.then(receipt => {
 				console.log("Transaction Successful:", receipt);
+				toAddress = '';
 				const token: any = receipt.events?.OwnershipTransferred.returnValues['0']
 				const to: any = receipt.events?.OwnershipTransferred.returnValues['2']
 
@@ -227,7 +230,7 @@
 			console.log("minting ", web3?.currentProvider)
 			loadingMint = true;
 
-		contract.methods.publicMint('0').send({from: userAddress})
+		contract.methods.publicMint(expiry.length > 0 ? expiry : '0').send({from: userAddress})
 			.then(receipt => {
 				console.log("Transaction Successful:", receipt);
 				const token: any = receipt.events?.ProductMinted.returnValues['0']
@@ -254,7 +257,7 @@
 
 	function generateQRCode(tokenId: string) {
         const qr = QRCode(0, "L");
-        qr.addData(`https://localhost?token=${tokenId}`);
+        qr.addData(`http://localhost:5173?token=${tokenId}`);
         qr.make();
         qrCodeSrc = qr.createDataURL(6, 6);
     }
@@ -329,12 +332,7 @@
 	<h1 class='font-mono font-bold text-6xl pt-10 pl-10 text-white'>Welcome to ChainTrack!</h1>
 
 	{#if authenticated}
-		<div class='flex flex-col gap-10 items-center w-full'>
-			<div class="animate-bounce">
-				<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
-			</div>
-			<Button click={go}>Go!</Button>
-		</div>
+		<p class='font-mono text-2xl text-white'>Connected Address: {userAddress}</p>
 	{:else if hasMetamask}
 		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please authenticate your wallet. We need your address so you can own and transfer products! Please <a href='https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en&pli=1' >install the MetaMask chrome extension</a> to link your wallet.</p>
 		<Button icon={faUser} click={authWallet}>Authenticate Wallet</Button>
@@ -343,26 +341,24 @@
 	{/if}
 </div>
 
-<div class='w-full bg-indigo-500 p-20'>
-	{#if metadata}
-		{#each metadata.history as h}
-		<div class='flex flex-row gap-5 items-center'>
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>{Object.keys(h)}</p><FontAwesomeIcon icon={faArrowRight} class='font-mono font-bold text-1xl pt-10 pl-10 text-white' /><p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'> {new Date(Number(Object.values(h).at(0)!)).toLocaleString()}</p> 
-		</div>
-		{/each}
-		{console.log(Object.keys(metadata.history.at(-1)!).at(0), Object.keys(metadata.history).at(-1), userAddress)}
-		{#if metadata.history.length > 0 && Object.keys(metadata.history.at(-1)!).at(0) === userAddress && !successfulTransfer}
-			<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
-			<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
-				{loadingTransfer ? "Loading..." : "Transfer Ownership"}
-			</Button>
-		{/if}
-
-		{#if successfulTransfer}
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Transfer successful</p>
-		{/if}
-	{/if}
+<div class='flex flex-row gap-30 justify-center items-baseline w-full bg-indigo-500 p-20'>
+	<div class='flex flex-col gap-5 w-1/6'>
+		<FontAwesomeIcon icon={faLink} class="text-white" size='5x' />
+		<p class='font-mono text-2xl text-white'>Mint and link a product on the blockchain!</p>
+	</div>
+	<div class='flex flex-col gap-5 w-1/6'>
+		<FontAwesomeIcon icon={faTimeline} class="text-white" size='5x' />
+		<p class='font-mono text-2xl text-white'>Track ownership across time - non-fungible and tamper-proof!</p>
+	</div>
+	<div class='flex flex-col gap-5 w-1/6'>
+		<FontAwesomeIcon icon={faMoneyBillTransfer} class="text-white" size='5x' />
+		<p class='font-mono text-2xl text-white'>Transfer ownership of products you own!</p>
+	</div>
 </div>
+
+ <img src='/railroad.webp' class='scale-120 absolute -z-10 bottom-20 -rotate-12'/>
+
+
 {/if}
 
 {#if currentView === 'products'}
@@ -373,6 +369,7 @@
 			<div class="animate-bounce">
 			<Textfield name="productName" placeholder="Product Name" size="lg" bind:value={productName}/>
 			</div>
+			<Textfield name="expiry" placeholder="(Optional) Expiry" size="md" bind:value={expiry}/>
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
