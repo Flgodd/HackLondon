@@ -10,7 +10,6 @@
 	import { storage } from "$lib/firebase-client";
     import { ref, getDownloadURL } from "firebase/storage";
 	import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-	import { icon } from "@fortawesome/fontawesome-svg-core";
 
 	let { data }: PageProps = $props();
 
@@ -49,12 +48,12 @@
 	$effect(() => {
 		console.log("buildContract: ", buildContract, authenticated, web3, contractAddress)
 		if(buildContract) {
-			console.log("building contract")
-			contract = new Contract<AbiItem[]>(
-				abi,
-				contractAddress!
-			);
-			contract.setProvider(web3?.currentProvider);
+			buildContractFn();
+
+			if (data.token){
+				token = data.token;
+				go();
+			}
 		}
 	})
 
@@ -91,6 +90,15 @@
 			console.log("contractAddress: ", contractAddress)
 		}
 	});
+
+	const buildContractFn = () => {
+		console.log("building contract")
+			contract = new Contract<AbiItem[]>(
+				abi,
+				contractAddress!
+			);
+			contract.setProvider(web3?.currentProvider);
+	}
 
 	const toggleMenu = () => {
 		isMenuOpen = !isMenuOpen;
@@ -246,7 +254,7 @@
 
 	function generateQRCode(tokenId: string) {
         const qr = QRCode(0, "L");
-        qr.addData(`https://localhost/product/${tokenId}`);
+        qr.addData(`https://localhost?token=${tokenId}`);
         qr.make();
         qrCodeSrc = qr.createDataURL(6, 6);
     }
@@ -368,8 +376,8 @@
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Link successful!</p>
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>QR Code (scan to view product):</p>
+			<p class='font-mono font-bold text-2xl p-5 text-white'>Link successful!</p>
+			<p class='font-mono font-bold text-2xl p-5 text-white'>QR Code (scan to view product):</p>
             {#if qrCodeSrc}
                 <img src={qrCodeSrc} alt="QR Code for product" />
             {/if}
@@ -441,7 +449,7 @@
         
         {#if successfulTransfer}
             <div class="mt-4 p-4 bg-green-600 rounded-lg text-white">
-                <p>Transfer successful! Transaction hash: {transactionHash}</p>
+                <p>Transfer successful!</p>
             </div>
         {/if}
 	{:else if invalidTokenError}
