@@ -8,7 +8,7 @@
 	import abi from '$lib/ProductTrackerABI.json';
 	import QRCode from "qrcode-generator";
 	import { storage } from "$lib/firebase-client";
-    import { ref, getDownloadURL } from "firebase/storage";
+    import { ref, getDownloadURL, uploadBytesResumable} from "firebase/storage";
 	import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
 
 	let { data }: PageProps = $props();
@@ -17,6 +17,11 @@
 		history: [{[key: string]: string}]
 		productName: string
 		token: string
+
+		image?: string
+		manufacturer?: string
+		serialNumber?: string
+  		specifications?: {[key: string]: string}
 	}
 	let currentView = $state('home');
 	let authenticated = $state(false);
@@ -38,6 +43,14 @@
 	let isNavVisible = $state(false);
 	let invalidTokenError = $state(false);
 	let expiry = $state('');
+
+	let productDescription = $state('');
+	let productImageFile = $state<File | null>(null);
+	let imageUploadProgress = $state(0);
+	let fileInput= $state<HTMLInputElement | null>(null);
+	let uploadedImageUrl = $state('');
+    let files: FileList | null = null;
+    let avatar= $state<string | null>(null)
 
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
@@ -101,6 +114,35 @@
 			contract.setProvider(web3?.currentProvider);
 			
 	}
+
+	const uploadImageToFirebase = async (file: File, tokenId: string): Promise<string> => {
+    // Create a storage reference
+    const imageRef = ref(storage, `images/${tokenId}_${file.name}`);
+    
+    // Upload the file
+    const uploadTask = uploadBytesResumable(imageRef, file);
+    
+    // Return a promise that resolves with the download URL
+    return new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                // Track upload progress
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                imageUploadProgress = progress;
+            },
+            (error) => {
+                // Handle errors
+                console.error("Upload failed:", error);
+                reject(error);
+            },
+            async () => {
+                // Upload completed, get download URL
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadURL);
+            }
+        );
+    });
+};
 
 	const toggleMenu = () => {
 		isMenuOpen = !isMenuOpen;
@@ -229,6 +271,7 @@
 		if(contract) {
 			console.log("minting ", web3?.currentProvider)
 			loadingMint = true;
+			let imageUrl = "";
 
 		contract.methods.publicMint(expiry.length > 0 ? expiry : '0').send({from: userAddress})
 			.then(receipt => {
@@ -241,12 +284,24 @@
 
 				generateQRCode(token);
 
+				if (productImageFile) {
+                    try {
+                        uploadImageToFirebase(productImageFile, token.toString()).then((url) => {
+							console.log("Image uploaded successfully:", url);
+							imageUrl = url;
+						});
+                        console.log("Image uploaded successfully:", imageUrl);
+                    } catch (error) {
+                        console.error("Failed to upload image:", error);
+                    }
+                }
+				
 				fetch('../api/metadataService', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({ userAddress, token: token.toString(), productName })
+					body: JSON.stringify({ userAddress, token: token.toString(), productName, image: imageUrl ? imageUrl : '' })
 				});
 			})
 			.catch(error => {
@@ -260,6 +315,23 @@
         qr.addData(`http://localhost:5173?token=${tokenId}`);
         qr.make();
         qrCodeSrc = qr.createDataURL(6, 6);
+    }
+
+	function getBase64(image: File): void {
+        const reader = new FileReader();
+        reader.readAsDataURL(image);
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+            if (e.target && e.target.result) {
+                avatar = e.target.result as string;
+            }
+        };
+    }
+
+    function handleFileChange(): void {
+		console.log("fileInput: ", files)
+        if (files && files.length > 0) {
+            getBase64(files[0]);
+        }
     }
 
 </script>
@@ -332,7 +404,13 @@
 	<h1 class='font-mono font-bold text-6xl pt-10 pl-10 text-white'>Welcome to ChainTrack!</h1>
 
 	{#if authenticated}
-		<p class='font-mono text-2xl text-white'>Connected Address: {userAddress}</p>
+		<div class='flex flex-col gap-10 items-center w-full'>
+			<div class="animate-bounce">
+				<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
+			</div>
+			<Button click={go}>Go!</Button>
+
+		</div>
 	{:else if hasMetamask}
 		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please authenticate your wallet. We need your address so you can own and transfer products! Please <a href='https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en&pli=1' >install the MetaMask chrome extension</a> to link your wallet.</p>
 		<Button icon={faUser} click={authWallet}>Authenticate Wallet</Button>
@@ -369,7 +447,6 @@
 			<div class="animate-bounce">
 			<Textfield name="productName" placeholder="Product Name" size="lg" bind:value={productName}/>
 			</div>
-			<Textfield name="expiry" placeholder="(Optional) Expiry" size="md" bind:value={expiry}/>
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
