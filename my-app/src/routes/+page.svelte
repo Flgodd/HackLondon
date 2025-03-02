@@ -235,9 +235,11 @@
 
 </script>
 
-<div class='flex flex-col gap-5 items-center absolute top-10 left-10'>
+<div class='flex flex-col gap-5 items-center absolute top-1 left-[85%]'>
 	<img src="/Chain_logo-r.png" alt="Menu" class="w-45 h-42 rounded-full" />
+</div>
 
+<div class='flex flex-col gap-5 items-center absolute top-10 left-10'>
 	<div>
 		<Button icon={faBars} click={toggleMenu}></Button>
 	</div>
@@ -386,9 +388,12 @@
             
             {#each metadata.history as historyItem, index}
                 <!-- Owner Address Capsule -->
-                <div class="w-full max-w-md bg-blue-800 rounded-full py-4 px-8 flex items-center justify-center">
-                    <p class='font-mono text-lg text-white overflow-hidden text-ellipsis'>
-                        {Object.keys(historyItem)[0]}
+                <div class="w-full max-w-md bg-blue-800 rounded-full py-3 px-6 flex flex-col items-center justify-center">
+                    <p class='font-mono text-base text-white overflow-hidden text-ellipsis'>
+                        {Object.keys(historyItem).length > 0 ? Object.keys(historyItem)[0] : 'Unknown'}
+                    </p>
+                    <p class="text-xs text-blue-200 mt-1">
+                        {new Date(Number(Object.values(historyItem)[0])).toLocaleString()}
                     </p>
                 </div>
                 
@@ -405,14 +410,14 @@
             {/each}
             
             {#if metadata.history.length > 0 && Object.keys(metadata.history.at(-1) || {}).at(0) === userAddress && !successfulTransfer}
-                <div class="w-full max-w-md mt-8">
-                    <Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
-                    <div class="mt-4 flex justify-center">
-                        <Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
-                            {loadingTransfer ? "Loading..." : "Transfer Ownership"}
-                        </Button>
-                    </div>
-                </div>
+				<div class="w-full max-w-md mt-8">
+					<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
+					<div class="mt-4 flex justify-center">
+						<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
+							{loadingTransfer ? "Loading..." : "Transfer Ownership"}
+						</Button>
+					</div>
+				</div>
             {/if}
         </div>
         
