@@ -1,15 +1,15 @@
 import { json } from '@sveltejs/kit';
-import { getStorage, ref, uploadString } from 'firebase/storage';
-import { db } from '$lib/firebase';
+import { storage } from '$lib/firebase';
+import fs from 'fs';
 
 export const POST = async ({cookies, request}) => {
     const data = await request.json();
     const { userAddress, token, productName } = data;
 
-    const metadataRef = ref(getStorage(), `token-metadata/${token}.json`);
-    
     const metadata = JSON.stringify({ token: token, history: [{[userAddress]: Date.now().toString()}], productName });
-    await uploadString(metadataRef, metadata, "raw");
+    fs.writeFileSync(`${token}.json`, metadata, "utf8");
+
+    await storage.bucket('wrangler-5a833.appspot.com').upload(`${token}.json`);
 
     return json({ success: true });
 };
