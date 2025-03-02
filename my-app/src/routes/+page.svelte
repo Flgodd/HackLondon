@@ -2,11 +2,15 @@
 	import { onMount } from "svelte";
 	import Button from "../lib/components/Button.svelte";
 	import Textfield from "../lib/components/Textfield.svelte";
-	import { faUser,faArrowUp, faLink } from "@fortawesome/free-solid-svg-icons";
+	import { faUser,faArrowUp, faLink, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
 	import QRCode from "qrcode-generator";
+	import { storage } from "$lib/firebase-client";
+    import { ref, getDownloadURL } from "firebase/storage";
+	import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+	import { icon } from "@fortawesome/fontawesome-svg-core";
 
 	let { data }: PageProps = $props();
 
@@ -53,7 +57,7 @@
 
 	$effect(() => {
 		if(successfulMint) {
-			sleep(5000).then(() => {
+			sleep(10000).then(() => {
 				successfulMint = false;
 			})
 		}
@@ -61,8 +65,8 @@
 
 	$effect(() => {
 		if(successfulTransfer) {
-			sleep(5000).then(() => {
-				successfulMint = false;
+			sleep(10000).then(() => {
+				successfulTransfer = false;
 			})
 		}
 	});
@@ -112,9 +116,6 @@
 			authenticated = true;
 			contractAddress = await fetchContract();
 		}
-
-		//maybe swap user to correct network if necessary:
-		//ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] })
 	}
 
 	const fetchContract = async () => {
@@ -131,12 +132,14 @@
 			successfulTransfer = false;
 			loadingTransfer = false;
 
-			const uri: string = await contract.methods.getProductMetadata(token).call({from: userAddress})
-			const resp = await fetch(uri, {
-				method: 'GET',
-			})
+			const metadataRef = ref(storage, `${token}.json`);
+			const url = await getDownloadURL(metadataRef);
 
-			metadata = await resp.json();
+			const response = await fetch(url, {method: 'GET'})
+			metadata = await response.json()
+			console.log("metadata: ", metadata)
+
+
 		}
 	}
 
@@ -171,7 +174,7 @@
 				loadingMint = false;
 				successfulMint = true;
 
-				//generateQRCode(token);
+				generateQRCode(token);
 
 				fetch('../api/metadataService', {
 					method: 'POST',
@@ -215,10 +218,12 @@
 <div class='w-full h-96 bg-indigo-500'>
 	{#if metadata}
 		{#each metadata.history as h}
-			<p>{h}</p>
+		<div class='flex flex-row gap-5 items-center'>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>{Object.keys(h)}</p><FontAwesomeIcon icon={faArrowRight} class='font-mono font-bold text-1xl pt-10 pl-10 text-white' /><p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'> {new Date(Number(Object.values(h).at(0)!)).toLocaleString()}</p> 
+		</div>
 		{/each}
-
-		{#if metadata.history.length > 0 && metadata.history.at(-1)!.ownerAddress === userAddress && !successfulTransfer}
+		{console.log(Object.keys(metadata.history.at(-1)!).at(0), Object.keys(metadata.history).at(-1), userAddress)}
+		{#if metadata.history.length > 0 && Object.keys(metadata.history.at(-1)!).at(0) === userAddress && !successfulTransfer}
 			<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
 			<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
 				{loadingTransfer ? "Loading..." : "Transfer Ownership"}
