@@ -291,7 +291,7 @@
 	{/if}
 </div>
 
-<div class='w-full bg-indigo-500'>
+<div class='w-full bg-indigo-500 p-20'>
 	{#if metadata}
 		{#each metadata.history as h}
 		<div class='flex flex-row gap-5 items-center'>
@@ -314,7 +314,7 @@
 {/if}
 
 {#if currentView === 'products'}
-<div class='w-full bg-indigo-700 flex flex-col gap-15 items-center justify-center'>
+<div class='w-full bg-indigo-700 flex flex-col gap-15 items-center justify-center p-20'>
 	{#if authenticated}
 		<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Link a Product!</h1>
 		<div class='flex flex-col gap-2 items-center w-full'>
@@ -335,7 +335,7 @@
 {/if}
 
 {#if currentView === 'profile'}
-<div class='w-full min-h-screen bg-indigo-800 flex flex-col gap-15 items-center justify-center'>
+<div class='w-full bg-indigo-800 flex flex-col gap-15 items-center justify-center p-20'>
 	<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Profile</h1>
 	{#if authenticated}
 		<p class='font-mono text-2xl text-white'>Connected Address: {userAddress}</p>
@@ -347,7 +347,7 @@
 {/if}
 
 {#if currentView === 'history'}
-<div class='w-full min-h-screen bg-indigo-900 flex flex-col gap-15 items-center justify-center'>
+<div class='w-full bg-indigo-900 flex flex-col gap-15 items-center justify-center p-20'>
 	<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Get Product History</h1>
 	<div class='flex flex-col gap-10 items-center w-full'>
 		<div class="animate-bounce">
