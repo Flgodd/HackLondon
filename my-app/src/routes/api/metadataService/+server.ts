@@ -7,9 +7,9 @@ export const POST = async ({cookies, request}) => {
     const { userAddress, token, productName } = data;
 
     const metadata = JSON.stringify({ token: token, history: [{[userAddress]: Date.now().toString()}], productName });
-    fs.writeFileSync(`${token}.json`, metadata, "utf8");
+    fs.writeFileSync(`metadata/${token}.json`, metadata, "utf8");
 
-    await storage.bucket('wrangler-5a833.appspot.com').upload(`${token}.json`);
+    await storage.bucket('wrangler-5a833.appspot.com').upload(`metadata/${token}.json`);
 
     return json({ success: true });
 };

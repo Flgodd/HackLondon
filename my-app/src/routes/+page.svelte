@@ -211,19 +211,20 @@
 
 </script>
 
-<button 
-    onclick={toggleMenu} 
-    class="fixed top-4 left-4 z-50 p-2 rounded-full"
->
-    <img src="/Chain_logo-r.png" alt="Menu" class="w-32 h-32 rounded-full" />
-</button>
+<div class='flex flex-col gap-5 items-center absolute top-10 left-10'>
+	<img src="/Chain_logo-r.png" alt="Menu" class="w-45 h-42 rounded-full" />
+
+	<div>
+		<Button icon={faBars} click={toggleMenu}></Button>
+	</div>
+</div>
 
 <!-- Navigation Bar (Hidden Initially) -->
 {#if isMenuOpen}
     <div 
-		class="absolute top-14 left-1/2 transform -translate-x-1/2 w-[50%] max-w-lg bg-cyan-600 shadow-md p-2 rounded-lg z-40 transition-transform scale-95 animate-fadeIn flex justify-center"
+		class="absolute top-10 left-1/2 transform -translate-x-1/2 w-[50%] max-w-lg bg-blue-600 shadow-md p-2 rounded-lg z-40 transition-transform scale-95 animate-fadeIn flex justify-center"
     >
-        <ul class="flex gap-6 text-white font-bold text-lg">
+        <ul class="flex gap-6 text-white font-bold text-lg ">
             <li>
                 <button class="py-2 px-4 hover:bg-indigo-700 rounded" onclick={() => navigateTo('home')}>Home</button>
             </li>
@@ -290,7 +291,7 @@
 	{/if}
 </div>
 
-<div class='w-full h-96 bg-indigo-500'>
+<div class='w-full bg-indigo-500'>
 	{#if metadata}
 		{#each metadata.history as h}
 		<div class='flex flex-row gap-5 items-center'>
@@ -306,14 +307,14 @@
 		{/if}
 
 		{#if successfulTransfer}
-			<p>Transfer successful! Transaction hash: {transactionHash}</p>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Transfer successful! Transaction hash: {transactionHash}</p>
 		{/if}
 	{/if}
 </div>
 {/if}
 
 {#if currentView === 'products'}
-<div class='w-full h-96 bg-indigo-700 flex flex-col gap-15 items-center justify-center'>
+<div class='w-full bg-indigo-700 flex flex-col gap-15 items-center justify-center'>
 	{#if authenticated}
 		<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Link a Product!</h1>
 		<div class='flex flex-col gap-2 items-center w-full'>
@@ -323,8 +324,8 @@
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
-			<p>Link successful! Transaction hash: {transactionHash}</p>
-			<p>QR Code (scan to view product):</p>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Link successful! Transaction hash: {transactionHash}</p>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>QR Code (scan to view product):</p>
             {#if qrCodeSrc}
                 <img src={qrCodeSrc} alt="QR Code for product" />
             {/if}
