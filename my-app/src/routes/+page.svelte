@@ -408,13 +408,7 @@
 	<h1 class='font-mono font-bold text-6xl pt-10 pl-10 text-white'>Welcome to ChainTrack!</h1>
 
 	{#if authenticated}
-		<div class='flex flex-col gap-10 items-center w-full'>
-			<div class="animate-bounce">
-				<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
-			</div>
-			<Button click={go}>Go!</Button>
-
-		</div>
+		<p class='font-mono text-2xl text-white'>Connected Address: {userAddress}</p>
 	{:else if hasMetamask}
 		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please authenticate your wallet. We need your address so you can own and transfer products! Please <a href='https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en&pli=1' >install the MetaMask chrome extension</a> to link your wallet.</p>
 		<Button icon={faUser} click={authWallet}>Authenticate Wallet</Button>
@@ -423,7 +417,7 @@
 	{/if}
 </div>
 
-<div class='flex flex-row gap-30 justify-center items-baseline w-full bg-indigo-500 p-10'>
+<div class='flex flex-row gap-30 justify-center items-baseline w-full bg-indigo-500 p-20'>
 	<div class='flex flex-col gap-5 w-1/6'>
 		<FontAwesomeIcon icon={faLink} class="text-white" size='5x' />
 		<p class='font-mono text-2xl text-white'>Mint and link a product on the blockchain!</p>
