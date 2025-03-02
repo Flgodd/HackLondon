@@ -29,7 +29,6 @@
 	let token = $state('');
 	let metadata: metadataType | undefined = $state(undefined);
 	let toAddress = $state('');
-	let transactionHash = $state('');
 	let productName = $state('');
 	let successfulTransfer = $state(false);
 	let successfulMint = $state(false);
@@ -183,15 +182,34 @@
 		if(contract) {
 			loadingTransfer = true;
 
-			const sendObj = contract.methods.transferProduct(toAddress, token).send({from: userAddress});
-			sendObj.on('transactionHash', function(hash){
-				transactionHash = hash;
-			});
+			contract.methods.transferProduct(toAddress, token).send({from: userAddress})
+			.then(receipt => {
+				console.log("Transaction Successful:", receipt);
+				const token: any = receipt.events?.OwnershipTransferred.returnValues['0']
+				const to: any = receipt.events?.OwnershipTransferred.returnValues['2']
 
-			sendObj.on('receipt', function (receipt) {
-				console.log("Transaction confirmed in a block:", receipt);
+				console.log("OwnershipTransferred with token id, ", token, to);
 				loadingTransfer = false;
 				successfulTransfer = true;
+
+				fetch('../api/metadataReadService', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ token: token.toString() })
+				});
+
+				fetch('../api/metadataService', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ userAddress: to, token: token.toString(), productName })
+				});
+			})
+			.catch(error => {
+				console.error("trsanfer Failed:", error);
 			});
 		}
 	}
@@ -333,7 +351,7 @@
 		{/if}
 
 		{#if successfulTransfer}
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Transfer successful! Transaction hash: {transactionHash}</p>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Transfer successful</p>
 		{/if}
 	{/if}
 </div>
@@ -350,7 +368,7 @@
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
-			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Link successful! Transaction hash: {transactionHash}</p>
+			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>Link successful!</p>
 			<p class='font-mono font-bold text-1xl pt-10 pl-10 text-white'>QR Code (scan to view product):</p>
             {#if qrCodeSrc}
                 <img src={qrCodeSrc} alt="QR Code for product" />
