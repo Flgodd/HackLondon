@@ -49,7 +49,7 @@
 	let imageUploadProgress = $state(0);
 	let fileInput= $state<HTMLInputElement | null>(null);
 	let uploadedImageUrl = $state('');
-    let files: FileList | null = null;
+    let files = $state<FileList | null>(null);
     let avatar= $state<string | null>(null)
 
 
@@ -447,6 +447,11 @@
 			<div class="animate-bounce">
 			<Textfield name="productName" placeholder="Product Name" size="lg" bind:value={productName}/>
 			</div>
+			{#if avatar}
+				<img id="avatar" src={avatar} alt="avatar"/>
+			{/if}
+			<input class="hidden" id="file-to-upload" type="file" accept=".png,.jpg" bind:files bind:this={fileInput} onchange={() => handleFileChange()}/>
+			<Button click={() => fileInput!.click()}>Upload</Button>
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
