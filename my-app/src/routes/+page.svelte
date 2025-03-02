@@ -303,6 +303,10 @@
 					},
 					body: JSON.stringify({ userAddress, token: token.toString(), productName, image: imageUrl ? imageUrl : '' })
 				});
+
+				avatar = null;
+				productName = '';
+				files = null;
 			})
 			.catch(error => {
 				console.error("Transaction Failed:", error);
