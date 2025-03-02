@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import Button from "../lib/components/Button.svelte";
 	import Textfield from "../lib/components/Textfield.svelte";
-	import { faUser,faArrowUp, faLink, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+	import { faUser,faArrowUp, faLink, faArrowRight, faBars} from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
@@ -19,7 +19,7 @@
 		productName: string
 		token: string
 	}
-
+	let currentView = $state('home');
 	let authenticated = $state(false);
 	let hasMetamask = $state(false);
 	let web3: Web3 | undefined = $state(undefined);
@@ -36,6 +36,8 @@
 	let loadingMint = $state(false);
 	let loadingTransfer = $state(false);
 	let qrCodeSrc = $state("");
+	let isMenuOpen = $state(false);
+	let isNavVisible = $state(false);
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
@@ -88,6 +90,16 @@
 			console.log("contractAddress: ", contractAddress)
 		}
 	});
+
+	const toggleMenu = () => {
+		isMenuOpen = !isMenuOpen;
+		isNavVisible = !isNavVisible;
+	}
+
+	const navigateTo = (view: string) => {
+		currentView = view;
+		isMenuOpen = false; // Close menu after selection
+	}
 
 	const authWallet = async () => {
 		//@ts-ignore
@@ -199,12 +211,75 @@
 
 </script>
 
+<button 
+    onclick={toggleMenu} 
+    class="fixed top-4 left-4 z-50 p-2 rounded-full"
+>
+    <img src="/Chain_logo-r.png" alt="Menu" class="w-32 h-32 rounded-full" />
+</button>
+
+<!-- Navigation Bar (Hidden Initially) -->
+{#if isMenuOpen}
+    <div 
+		class="absolute top-14 left-1/2 transform -translate-x-1/2 w-[50%] max-w-lg bg-cyan-600 shadow-md p-2 rounded-lg z-40 transition-transform scale-95 animate-fadeIn flex justify-center"
+    >
+        <ul class="flex gap-6 text-white font-bold text-lg">
+            <li>
+                <button class="py-2 px-4 hover:bg-indigo-700 rounded" onclick={() => navigateTo('home')}>Home</button>
+            </li>
+            <li>
+                <button class="py-2 px-4 hover:bg-indigo-700 rounded" onclick={() => navigateTo('products')}>Products</button>
+            </li>
+            <li>
+                <button class="py-2 px-4 hover:bg-indigo-700 rounded" onclick={() => navigateTo('profile')}>Profile</button>
+            </li>
+            <li>
+                <button class="py-2 px-4 hover:bg-indigo-700 rounded" onclick={() => navigateTo('history')}>Get History</button>
+            </li>
+        </ul>
+    </div>
+{/if}
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out;
+    }
+    
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(5px);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    .animate-bounce {
+        animation: bounce 4.0s ease-in-out infinite;
+    }
+</style>
+
+<!-- Home View -->
+{#if currentView === 'home'}
 <div class='flex flex-col gap-15 items-center justify-center w-full bg-indigo-900 p-20'>
 	<h1 class='font-mono font-bold text-6xl pt-10 pl-10 text-white'>Welcome to ChainTrack!</h1>
 
 	{#if authenticated}
-		<div class='flex flex-col gap-2 items-center w-full'>
-			<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
+		<div class='flex flex-col gap-10 items-center w-full'>
+			<div class="animate-bounce">
+				<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
+			</div>
 			<Button click={go}>Go!</Button>
 		</div>
 	{:else if hasMetamask}
@@ -235,12 +310,16 @@
 		{/if}
 	{/if}
 </div>
+{/if}
 
+{#if currentView === 'products'}
 <div class='w-full h-96 bg-indigo-700 flex flex-col gap-15 items-center justify-center'>
 	{#if authenticated}
 		<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Link a Product!</h1>
 		<div class='flex flex-col gap-2 items-center w-full'>
+			<div class="animate-bounce">
 			<Textfield name="productName" placeholder="Product Name" size="lg" bind:value={productName}/>
+			</div>
 			<Button icon={faLink} click={mintProduct}>{loadingMint ? "Loading..." : "Link"}</Button>
 		</div>
 		{#if successfulMint}
@@ -252,3 +331,29 @@
 		{/if}
 	{/if}
 </div>
+{/if}
+
+{#if currentView === 'profile'}
+<div class='w-full min-h-screen bg-indigo-800 flex flex-col gap-15 items-center justify-center'>
+	<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Profile</h1>
+	{#if authenticated}
+		<p class='font-mono text-2xl text-white'>Connected Address: {userAddress}</p>
+	{:else}
+		<p class='font-mono font-bold text-3xl pt-10 pl-10 text-white'>Please authenticate your wallet to view your profile.</p>
+		<Button icon={faUser} click={authWallet}>Authenticate Wallet</Button>
+	{/if}
+</div>
+{/if}
+
+{#if currentView === 'history'}
+<div class='w-full min-h-screen bg-indigo-900 flex flex-col gap-15 items-center justify-center'>
+	<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Get Product History</h1>
+	<div class='flex flex-col gap-10 items-center w-full'>
+		<div class="animate-bounce">
+			<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
+		</div>
+		<Button click={go}>Get History</Button>
+	</div>
+	<p class='font-mono text-2xl text-white'>History will appear here.</p>
+</div>
+{/if}
