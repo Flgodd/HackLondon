@@ -419,7 +419,7 @@
 	{/if}
 </div>
 
-<div class='flex flex-row gap-30 justify-center items-baseline w-full bg-indigo-500 p-20'>
+<div class='flex flex-row gap-30 justify-center items-baseline w-full bg-indigo-500 p-10'>
 	<div class='flex flex-col gap-5 w-1/6'>
 		<FontAwesomeIcon icon={faLink} class="text-white" size='5x' />
 		<p class='font-mono text-2xl text-white'>Mint and link a product on the blockchain!</p>
@@ -434,7 +434,7 @@
 	</div>
 </div>
 
- <img src='/railroad.webp' class='scale-120 absolute -z-10 bottom-20 -rotate-12'/>
+ <img src='/railroad.webp' class='scale-120 absolute -z-10 bottom-10 -rotate-12'/>
 
 
 {/if}
