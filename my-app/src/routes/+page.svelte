@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import Button from "../lib/components/Button.svelte";
 	import Textfield from "../lib/components/Textfield.svelte";
-	import { faUser,faArrowUp, faLink, faArrowRight, faBars} from "@fortawesome/free-solid-svg-icons";
+	import { faUser,faArrowUp, faLink, faArrowRight, faBars, faArrowDown} from "@fortawesome/free-solid-svg-icons";
 	import Web3, { Contract, type AbiItem } from 'web3';
 	import type { PageProps } from "./$types";
 	import abi from '$lib/ProductTrackerABI.json';
@@ -414,7 +414,7 @@
             
             {#each metadata.history as historyItem, index}
                 <!-- Owner Address Capsule -->
-                <div class="w-full max-w-md bg-blue-800 rounded-full py-3 px-6 flex flex-col items-center justify-center">
+                <div class="w-full max-w-md bg-blue-800 rounded-full py-3 px-6 flex flex-col items-center justify-center mb-5">
                     <p class='font-mono text-base text-white overflow-hidden text-ellipsis'>
                         {Object.keys(historyItem).length > 0 ? Object.keys(historyItem)[0] : 'Unknown'}
                     </p>
@@ -425,24 +425,24 @@
                 
                 <!-- Timestamp with arrow (if not the last item) -->
                 {#if index < metadata.history.length - 1}
-                    <div class="flex flex-col items-center my-2">
-                        <div class="h-16 w-2 bg-blue-700"></div>
-                        <div class="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-blue-700"></div>
-                    </div>
-                    <div class="mb-4 text-white text-center">
-                        {new Date(Number(Object.values(historyItem)[0])).toLocaleString()}
-                    </div>
-                {/if}
-            {/each}
+					<div class="flex flex-col items-center my-2">
+						<div class="animate-bounce">
+							<FontAwesomeIcon icon={faArrowDown} class="text-blue-400 text-4xl mb-2" />
+						</div>
+					</div>
+				{/if}
+			{/each}
             
             {#if metadata.history.length > 0 && Object.keys(metadata.history.at(-1) || {}).at(0) === userAddress && !successfulTransfer}
-				<div class="w-full max-w-md mt-8">
-					<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
-					<div class="mt-4 flex justify-center">
+				<div class='flex flex-col gap-10 items-center w-full'>
+					<div class="aminmate-fadeIn">
+						<div class="animate-bounce">
+							<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
+						</div>
+					</div>
 						<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
 							{loadingTransfer ? "Loading..." : "Transfer Ownership"}
 						</Button>
-					</div>
 				</div>
             {/if}
         </div>
