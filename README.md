@@ -16,7 +16,7 @@ This project implements a **blockchain-powered product tracking system** using *
 ### 🏗️ **Tech Stack**
 | Component          | Technology |
 |-------------------|------------|
-| **Blockchain**    | Polygon Mumbai (Testnet) |
+| **Blockchain**    | Sepolia (Etthereum) |
 | **Smart Contract** | Solidity (ERC-721, OpenZeppelin) |
 | **Storage**       | IPFS (Pinata) for metadata |
 | **Backend**       | Node.js, Express, Web3.js |
