@@ -37,6 +37,8 @@
 	let qrCodeSrc = $state("");
 	let isMenuOpen = $state(false);
 	let isNavVisible = $state(false);
+	let invalidTokenError = $state(false);
+
 
 	let buildContract = $derived(authenticated && web3 && contractAddress);
 
@@ -139,20 +141,42 @@
 	}
 
 	const go = async () => {
-		if(contract) {
+	if(contract) {
+		try {
+			// Reset states
+			invalidTokenError = false;
 			successfulTransfer = false;
 			loadingTransfer = false;
 
+			// Get metadata from Firebase using the token
 			const metadataRef = ref(storage, `${token}.json`);
 			const url = await getDownloadURL(metadataRef);
 
-			const response = await fetch(url, {method: 'GET'})
-			metadata = await response.json()
-			console.log("metadata: ", metadata)
-
-
+			const response = await fetch(url, {method: 'GET'});
+			
+			if (response.ok) {
+				metadata = await response.json();
+				console.log("metadata: ", metadata);
+			} else {
+				console.error("Failed to fetch metadata:", response.statusText);
+				invalidTokenError = true;
+				metadata = undefined;
+			}
+		} catch (error: any) {
+			console.error("Error fetching metadata:", error);
+			
+			if (error.code === "storage/object-not-found") {
+				console.log("Invalid token: object not found");
+				invalidTokenError = true;
+				metadata = undefined;
+			} else {
+				console.error("Other error occurred:", error);
+			}
 		}
+	} else {
+		console.warn("Contract not initialized");
 	}
+}
 
 	const transferOwnership = async () => {
 		if(contract) {
@@ -229,9 +253,11 @@
 
 </script>
 
-<div class='flex flex-col gap-5 items-center absolute top-10 left-10'>
+<div class='flex flex-col gap-5 items-center absolute top-1 left-[85%]'>
 	<img src="/Chain_logo-r.png" alt="Menu" class="w-45 h-42 rounded-full" />
+</div>
 
+<div class='flex flex-col gap-5 items-center absolute top-10 left-10'>
 	<div>
 		<Button icon={faBars} click={toggleMenu}></Button>
 	</div>
@@ -365,14 +391,67 @@
 {/if}
 
 {#if currentView === 'history'}
-<div class='w-full bg-indigo-900 flex flex-col gap-15 items-center justify-center p-20'>
-	<h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Get Product History</h1>
-	<div class='flex flex-col gap-10 items-center w-full'>
-		<div class="animate-bounce">
-			<Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
-		</div>
-		<Button click={go}>Get History</Button>
+<div class='w-full min-h-screen bg-indigo-900 flex flex-col gap-15 items-center justify-center'>
+    <h1 class='font-mono font-bold text-5xl pt-10 pl-10 text-white'>Get Product History</h1>
+    <div class='flex flex-col gap-10 items-center w-full'>
+        <div class="animate-bounce">
+            <Textfield name="tokenId" placeholder="Token ID" size="lg" id="tokenId" bind:value={token}/>
+        </div>
+        <Button click={go}>Get History</Button>
+    </div>
+    
+    {#if metadata && metadata.history && metadata.history.length > 0}
+        <div class="flex flex-col items-center w-full max-w-lg my-8">
+            <h2 class='font-mono font-bold text-3xl mb-6 text-white'>Product: {metadata.productName}</h2>
+            
+            {#each metadata.history as historyItem, index}
+                <!-- Owner Address Capsule -->
+                <div class="w-full max-w-md bg-blue-800 rounded-full py-3 px-6 flex flex-col items-center justify-center">
+                    <p class='font-mono text-base text-white overflow-hidden text-ellipsis'>
+                        {Object.keys(historyItem).length > 0 ? Object.keys(historyItem)[0] : 'Unknown'}
+                    </p>
+                    <p class="text-xs text-blue-200 mt-1">
+                        {new Date(Number(Object.values(historyItem)[0])).toLocaleString()}
+                    </p>
+                </div>
+                
+                <!-- Timestamp with arrow (if not the last item) -->
+                {#if index < metadata.history.length - 1}
+                    <div class="flex flex-col items-center my-2">
+                        <div class="h-16 w-2 bg-blue-700"></div>
+                        <div class="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-blue-700"></div>
+                    </div>
+                    <div class="mb-4 text-white text-center">
+                        {new Date(Number(Object.values(historyItem)[0])).toLocaleString()}
+                    </div>
+                {/if}
+            {/each}
+            
+            {#if metadata.history.length > 0 && Object.keys(metadata.history.at(-1) || {}).at(0) === userAddress && !successfulTransfer}
+				<div class="w-full max-w-md mt-8">
+					<Textfield name="addressTo" placeholder="To Address" size="lg" bind:value={toAddress}/>
+					<div class="mt-4 flex justify-center">
+						<Button icon={faArrowUp} click={transferOwnership} disabled={loadingTransfer}>    
+							{loadingTransfer ? "Loading..." : "Transfer Ownership"}
+						</Button>
+					</div>
+				</div>
+            {/if}
+        </div>
+        
+        {#if successfulTransfer}
+            <div class="mt-4 p-4 bg-green-600 rounded-lg text-white">
+                <p>Transfer successful! Transaction hash: {transactionHash}</p>
+            </div>
+        {/if}
+	{:else if invalidTokenError}
+	<div class="mt-8 p-4 bg-red-600 rounded-lg">
+		<p class='font-mono text-2xl text-white'>Invalid Token ID. Please enter a valid token.</p>
 	</div>
-	<p class='font-mono text-2xl text-white'>History will appear here.</p>
+    {:else if metadata}
+        <p class='font-mono text-2xl text-white mt-8'>No history available for this product.</p>
+    {:else}
+        <p class='font-mono text-2xl text-white mt-8'>Enter a token ID to see its history.</p>
+    {/if}
 </div>
 {/if}
